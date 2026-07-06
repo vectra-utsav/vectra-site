@@ -83,28 +83,116 @@ export const engineeringLead =
 export const engineeringIntro =
   "It's a living system — services that don't trust each other blindly, requests that leave a trail, failures that get noticed and survived, quietly, before anyone has to ask what happened.";
 
-export type SystemNode = {
+export type PipelineStage = {
   id: string;
   name: string;
+  kind: "service" | "signal";
   role: string;
+  log: string;
+  badge?: "PROMETHEUS" | "GRAFANA" | "TEMPO";
 };
 
-export const systemNodes: SystemNode[] = [
-  { id: "gateway", name: "Gateway", role: "Every request enters here first." },
-  { id: "auth", name: "Authentication", role: "Identity, verified once, trusted everywhere." },
-  { id: "users", name: "Users", role: "Who is riding. Who is driving." },
-  { id: "ride", name: "Ride", role: "The state machine of a single trip." },
-  { id: "dispatch", name: "Dispatch", role: "Who moves whom, decided in milliseconds." },
-  { id: "payment", name: "Payment", role: "The ledger. It never disagrees with itself." },
-  { id: "notification", name: "Notification", role: "The moment something changes, someone knows." },
-  { id: "observability", name: "Observability", role: "Every trace, metric, and log, correlated." }
+/**
+ * One ride request's real path: domain hops first, then the instrumentation
+ * it produces as a side effect of having moved through them. Metrics/Tracing/
+ * Alerts aren't separate deployable services — they're the observability
+ * pipeline every hop already writes to.
+ */
+export const pipelineStages: PipelineStage[] = [
+  {
+    id: "gateway",
+    name: "Gateway",
+    kind: "service",
+    role: "The request enters here first — authenticated, rate-shaped, routed.",
+    log: "gateway   → request accepted  ride_req#4471"
+  },
+  {
+    id: "ride",
+    name: "Ride",
+    kind: "service",
+    role: "A state machine opens: requested.",
+    log: "ride      → state: requested → matching"
+  },
+  {
+    id: "dispatch",
+    name: "Dispatch",
+    kind: "service",
+    role: "Nearby drivers are scored on proximity, load, and intent.",
+    log: "dispatch  → scoring 12 candidates"
+  },
+  {
+    id: "driver-assignment",
+    name: "Driver Assignment",
+    kind: "service",
+    role: "Dispatch confirms the match. A driver is chosen.",
+    log: "dispatch  → assigned driver#118, confidence 0.94"
+  },
+  {
+    id: "notification",
+    name: "Notification",
+    kind: "service",
+    role: "Both sides find out at the same instant.",
+    log: "notify    → pushed to rider + driver"
+  },
+  {
+    id: "payment",
+    name: "Payment",
+    kind: "service",
+    role: "A ledger entry opens. It will not disagree with itself later.",
+    log: "payment   → authorization held"
+  },
+  {
+    id: "logging",
+    name: "Logging",
+    kind: "signal",
+    role: "Every hop this request made is now one correlated story.",
+    log: "logs      → 6 events correlated  trace=4471"
+  },
+  {
+    id: "metrics",
+    name: "Metrics",
+    kind: "signal",
+    role: "The request becomes a number the system can watch.",
+    log: "metrics   → ride_requests_total +1",
+    badge: "PROMETHEUS"
+  },
+  {
+    id: "tracing",
+    name: "Tracing",
+    kind: "signal",
+    role: "The full span, end to end, one request wide.",
+    log: "tempo     → span closed  212ms",
+    badge: "TEMPO"
+  },
+  {
+    id: "alerts",
+    name: "Alerts",
+    kind: "signal",
+    role: "Nothing fired. Nothing needed to.",
+    log: "alerts    → all clear",
+    badge: "GRAFANA"
+  }
 ];
 
+export const instrumentCopy: Record<"PROMETHEUS" | "GRAFANA" | "TEMPO", string> = {
+  PROMETHEUS: "Scraped by Prometheus.",
+  TEMPO: "Received by Tempo.",
+  GRAFANA: "Rendered in Grafana."
+};
+
+export const engineeringImpactNote = "Then Dispatch stops answering.";
+
 export const engineeringFailureNote =
-  "Watch what happens when one part of it fails.";
+  "No candidates. No response. The state machine is stuck mid-decision.";
+
+export const engineeringRetryNote =
+  "It doesn't page anyone yet. It retries — on a backoff, like it was taught to.";
+
+export const engineeringReconciliationNote =
+  "The reconciliation worker wakes up, finds the stuck ride, and finishes what Dispatch started.";
 
 export const engineeringRecoveryNote =
-  "It notices. It retries. It routes around the damage. Nobody has to page anyone.";
+  "Recovered in under two seconds. The rider never knew.";
 
 export const engineeringClose =
   "Distributed systems are usually hidden because they're ugly. We think ours is the most honest part of the whole company.";

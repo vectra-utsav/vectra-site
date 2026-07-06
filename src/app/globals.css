@@ -470,17 +470,205 @@ a {
 }
 
 .engineering-diagram-wrap {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.1rem;
   width: 100%;
 }
 
 .engineering-svg {
-  width: min(72vh, 560px);
-  height: min(72vh, 560px);
-  max-width: 92vw;
+  position: relative;
+  z-index: 2;
+  width: min(62vh, 480px);
+  height: min(62vh, 480px);
+  max-width: 84vw;
+}
+
+/* ambient — the platform is always running, even at rest */
+
+.engineering-ambient {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: min(62vh, 480px);
+  height: min(62vh, 480px);
+  max-width: 84vw;
+  max-height: 84vw;
+  pointer-events: none;
+  translate: -50% -50%;
+}
+
+.engineering-ambient span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0;
+  animation: ambientOrbit linear infinite;
+}
+
+@keyframes ambientOrbit {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) translateX(var(--orbit-r)) rotate(0deg);
+  }
+  8% {
+    opacity: 0.4;
+  }
+  92% {
+    opacity: 0.4;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(360deg) translateX(var(--orbit-r)) rotate(-360deg);
+  }
+}
+
+/* heartbeat — a single honest line, flattens under load */
+
+.engineering-heartbeat {
+  position: relative;
+  z-index: 2;
+  width: min(30rem, 84vw);
+  height: 34px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+}
+
+.engineering-heartbeat svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  animation: heartbeatScroll 3.2s linear infinite;
+}
+
+.engineering-heartbeat path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.5s var(--ease-cinematic);
+}
+
+.engineering-heartbeat.is-failing path {
+  stroke: var(--crimson-bright);
+}
+
+.engineering-heartbeat.is-flat svg {
+  animation-duration: 3.2s;
+}
+
+.engineering-heartbeat-wave {
+  transform-origin: center;
+  transition: transform 0.6s var(--ease-cinematic);
+}
+
+@keyframes heartbeatScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* log ticker */
+
+.engineering-log {
+  position: relative;
+  z-index: 2;
+  min-height: 1.4rem;
+  width: min(30rem, 84vw);
+  text-align: center;
+}
+
+.engineering-log p {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  color: var(--ink-faint);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* alert tag */
+
+.engineering-alert {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--crimson);
+  color: var(--crimson-bright);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.engineering-alert-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--crimson-bright);
+  animation: alertPulse 1s ease-in-out infinite;
+}
+
+@keyframes alertPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* instrument attribution — one at a time, never a dashboard grid */
+
+.engineering-instrument {
+  color: var(--gold);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* reconciliation worker */
+
+.engineering-reconciler {
+  filter: drop-shadow(0 0 8px var(--gold-soft));
 }
 
 .engineering-node-label {
@@ -536,6 +724,10 @@ a {
   line-height: 1.5;
 }
 
+.engineering-caption-role.is-failing {
+  color: var(--crimson-bright);
+}
+
 .engineering-close {
   max-width: 30rem;
   margin: 0;
@@ -554,10 +746,41 @@ a {
   }
 }
 
+/* ---------- Convergence (silent collapse into the reveal) ---------- */
+
+.convergence-track {
+  position: relative;
+}
+
+.convergence-sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.convergence-svg {
+  width: min(50vh, 420px);
+  height: min(50vh, 420px);
+  max-width: 70vw;
+}
+
+.convergence-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--bg);
+  pointer-events: none;
+}
+
 /* ---------- The Reveal ---------- */
 
 .reveal-silence {
-  min-height: 45svh;
+  min-height: 12svh;
 }
 
 .reveal-section {
