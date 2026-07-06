@@ -28,14 +28,15 @@ const CENTER = SIZE / 2;
 const RADIUS = SIZE * 0.37;
 const LABEL_RADIUS = RADIUS + 32;
 const FAILURE_INDEX = 2; // Dispatch
+const DEPENDENCY_INDEX = 1; // Ride — dims as if it can't reach Dispatch either
 const START_ANGLE = -Math.PI / 2;
 const TOTAL_NODES = pipelineStages.length;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const T_DISPATCH_ARRIVE = 0.36;
-const T_FREEZE_END = 0.72;
+const T_FREEZE_END = 0.74;
 
-type Phase = "travel" | "impact" | "failure" | "retry" | "recovery";
+type Phase = "travel" | "impact" | "failure" | "silence" | "retry" | "healing" | "recovery";
 
 const HEARTBEAT_PATH =
   "M0 17 L18 17 L23 5 L28 29 L33 17 L50 17 L68 17 L73 5 L78 29 L83 17 L100 17 L118 17 L123 5 L128 29 L133 17 L150 17 L168 17 L173 5 L178 29 L183 17 L200 17";
@@ -43,10 +44,14 @@ const HEARTBEAT_PATH =
 const AMPLITUDE: Record<Phase, number> = {
   travel: 1,
   impact: 0.45,
-  failure: 0.1,
+  failure: 0.14,
+  silence: 0.02,
   retry: 0.4,
+  healing: 0.75,
   recovery: 1
 };
+
+const TROUBLE_PHASES: Phase[] = ["impact", "failure", "silence", "retry"];
 
 function nodeAngle(i: number) {
   return START_ANGLE + (i / TOTAL_NODES) * Math.PI * 2;
@@ -125,9 +130,11 @@ export function ChapterEngineering() {
     let nextPhase: Phase = "travel";
     if (t > T_DISPATCH_ARRIVE && t <= T_FREEZE_END) {
       const fw = (t - T_DISPATCH_ARRIVE) / (T_FREEZE_END - T_DISPATCH_ARRIVE);
-      if (fw < 0.12) nextPhase = "impact";
-      else if (fw < 0.42) nextPhase = "failure";
-      else if (fw < 0.6) nextPhase = "retry";
+      if (fw < 0.1) nextPhase = "impact";
+      else if (fw < 0.3) nextPhase = "failure";
+      else if (fw < 0.38) nextPhase = "silence";
+      else if (fw < 0.56) nextPhase = "retry";
+      else if (fw < 0.72) nextPhase = "healing";
       else nextPhase = "recovery";
     }
     setPhase((p) => (p === nextPhase ? p : nextPhase));
@@ -140,21 +147,33 @@ export function ChapterEngineering() {
   });
 
   const activeStage = pipelineStages[activeIndex];
-  const isTrouble = phase === "impact" || phase === "failure" || phase === "retry";
-  const isAlert = phase === "failure" || phase === "retry";
-  const isRecovering = phase === "recovery";
+  const isTrouble = TROUBLE_PHASES.includes(phase);
+  const isAlert = phase === "failure" || phase === "silence" || phase === "retry";
+  const isHealing = phase === "healing";
+  const isWaking = phase === "retry" || phase === "healing" || phase === "recovery";
   const isLastStage = activeIndex === TOTAL_NODES - 1 && phase === "travel";
+
+  const ringColor = isTrouble ? "var(--crimson)" : isHealing ? "var(--healing)" : "var(--gold)";
+  const nodeColor = isTrouble
+    ? "var(--crimson-bright)"
+    : isHealing
+      ? "var(--healing)"
+      : "var(--gold-bright)";
 
   const logLine =
     phase === "impact"
       ? "dispatch  → timeout waiting for candidates"
       : phase === "failure"
         ? "dispatch  → 0/12 candidates responded"
-        : phase === "retry"
-          ? "dispatch  → retry 1/3 (backoff 400ms)"
-          : phase === "recovery"
-            ? "reconciler → ride#4471 resumed"
-            : activeStage.log;
+        : phase === "silence"
+          ? "…"
+          : phase === "retry"
+            ? "dispatch  → retry 1/3 (backoff 400ms)"
+            : phase === "healing"
+              ? "dispatch  → healthy, rejoining ring"
+              : phase === "recovery"
+                ? "reconciler → ride#4471 resumed"
+                : activeStage.log;
 
   return (
     <>
@@ -231,22 +250,22 @@ export function ChapterEngineering() {
                 cy={CENTER}
                 r={RADIUS}
                 fill="none"
-                stroke={isTrouble ? "var(--crimson)" : "var(--gold)"}
+                stroke={ringColor}
                 strokeWidth={1.5}
                 strokeLinecap="round"
                 strokeDasharray={CIRCUMFERENCE}
                 style={{ strokeDashoffset: ringOffset, rotate: -90, transformOrigin: "50% 50%" }}
-                animate={{ stroke: isTrouble ? "var(--crimson)" : "var(--gold)" }}
-                transition={{ duration: 0.4 }}
+                animate={{ stroke: ringColor }}
+                transition={{ duration: 0.5 }}
               />
 
-              {isRecovering && (
+              {isWaking && (
                 <motion.circle
                   className="engineering-reconciler"
                   cx={CENTER}
                   cy={CENTER}
                   r={5}
-                  fill="var(--gold-bright)"
+                  fill={isHealing ? "var(--healing)" : "var(--gold-bright)"}
                   initial={{ opacity: 0, scale: 0 }}
                   animate={{ opacity: 1, scale: [0, 1.4, 1] }}
                   transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
@@ -259,8 +278,10 @@ export function ChapterEngineering() {
                 const lp = point(a, LABEL_RADIUS);
                 const isActive = i === activeIndex;
                 const isFailNode = isActive && isTrouble && i === FAILURE_INDEX;
+                const isHealNode = isActive && isHealing && i === FAILURE_INDEX;
+                const isDependency = i === DEPENDENCY_INDEX && isTrouble;
                 return (
-                  <g key={stage.id}>
+                  <g key={stage.id} opacity={isDependency ? 0.35 : 1}>
                     <motion.circle
                       cx={p.x}
                       cy={p.y}
@@ -268,9 +289,11 @@ export function ChapterEngineering() {
                       fill={
                         isFailNode
                           ? "var(--crimson-bright)"
-                          : isActive
-                            ? "var(--gold-bright)"
-                            : "var(--bg-elevated)"
+                          : isHealNode
+                            ? "var(--healing)"
+                            : isActive
+                              ? "var(--gold-bright)"
+                              : "var(--bg-elevated)"
                       }
                       stroke={isActive ? "transparent" : "var(--line-strong)"}
                       strokeWidth={1}
@@ -280,7 +303,9 @@ export function ChapterEngineering() {
                     <text
                       x={lp.x}
                       y={lp.y}
-                      className={`engineering-node-label ${isActive ? (isFailNode ? "is-failing" : "is-active") : ""}`}
+                      className={`engineering-node-label ${
+                        isFailNode ? "is-failing" : isActive ? "is-active" : ""
+                      }`}
                     >
                       {stage.name}
                     </text>
@@ -292,9 +317,9 @@ export function ChapterEngineering() {
                 cx={cx}
                 cy={cy}
                 r={9}
-                fill={isTrouble ? "var(--crimson-bright)" : "var(--gold-bright)"}
+                fill={nodeColor}
                 animate={{
-                  fill: isTrouble ? "var(--crimson-bright)" : "var(--gold-bright)",
+                  fill: nodeColor,
                   scale: isAlert ? [1, 1.25, 0.9, 1.15, 1] : 1
                 }}
                 transition={
@@ -305,7 +330,9 @@ export function ChapterEngineering() {
                 style={{
                   filter: isTrouble
                     ? "drop-shadow(0 0 10px var(--crimson))"
-                    : "drop-shadow(0 0 10px var(--gold-soft))"
+                    : isHealing
+                      ? "drop-shadow(0 0 10px var(--healing))"
+                      : "drop-shadow(0 0 10px var(--gold-soft))"
                 }}
               />
             </svg>
@@ -368,6 +395,18 @@ export function ChapterEngineering() {
                     <p className="engineering-caption-role is-failing">{engineeringFailureNote}</p>
                   </motion.div>
                 )}
+                {phase === "silence" && (
+                  <motion.div
+                    key="silence"
+                    className="engineering-caption-inner"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <p className="engineering-caption-title is-failing">&nbsp;</p>
+                  </motion.div>
+                )}
                 {phase === "retry" && (
                   <motion.div
                     key="retry"
@@ -381,6 +420,19 @@ export function ChapterEngineering() {
                     <p className="engineering-caption-role">{engineeringRetryNote}</p>
                   </motion.div>
                 )}
+                {phase === "healing" && (
+                  <motion.div
+                    key="healing"
+                    className="engineering-caption-inner"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <p className="engineering-caption-title">Healing.</p>
+                    <p className="engineering-caption-role">{engineeringReconciliationNote}</p>
+                  </motion.div>
+                )}
                 {phase === "recovery" && (
                   <motion.div
                     key="recovery"
@@ -391,7 +443,6 @@ export function ChapterEngineering() {
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <p className="engineering-caption-title">Recovered.</p>
-                    <p className="engineering-caption-role">{engineeringReconciliationNote}</p>
                     <p className="engineering-caption-role">{engineeringRecoveryNote}</p>
                   </motion.div>
                 )}

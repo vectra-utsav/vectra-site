@@ -16,6 +16,7 @@
   --gold-soft: rgba(176, 141, 62, 0.32);
   --crimson: #8a3a3f;
   --crimson-bright: #c15c62;
+  --healing: #c98f3a;
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", sans-serif;
@@ -36,6 +37,10 @@
   --container: min(100% - 3rem, 1220px);
   --container-narrow: min(100% - 3rem, 780px);
   --radius: 4px;
+
+  --ambient-density: 0.6;
+  --ambient-speed: 1;
+  --ambient-warmth: 0.4;
 
   color-scheme: dark;
 }
@@ -88,6 +93,52 @@ a {
 .site-shell {
   position: relative;
   min-height: 100vh;
+}
+
+.has-custom-cursor {
+  cursor: none;
+}
+
+.has-custom-cursor a,
+.has-custom-cursor button {
+  cursor: none;
+}
+
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 300;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 1px solid var(--gold-soft);
+  border-radius: 50%;
+  pointer-events: none;
+  transition: width 0.3s var(--ease-cinematic), height 0.3s var(--ease-cinematic),
+    margin 0.3s var(--ease-cinematic), border-color 0.3s var(--ease-cinematic);
+  will-change: transform;
+}
+
+.custom-cursor.is-grow {
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-color: var(--gold);
+  background: var(--gold-soft);
+}
+
+.ambient-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 20%,
+    rgba(176, 141, 62, calc(var(--ambient-warmth) * 0.16)),
+    transparent 70%
+  );
+  transition: background 1.2s var(--ease-cinematic);
 }
 
 /* ---------- shared chapter primitives ---------- */
@@ -238,19 +289,13 @@ a {
   overflow: hidden;
 }
 
-.problem-particles {
+.city-canvas {
   position: absolute;
   inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-}
-
-.problem-particle {
-  position: absolute;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--ink-faint);
 }
 
 .chapter-problem .chapter-shell {
@@ -883,6 +928,7 @@ a {
   gap: 1.8rem;
   padding: 1.9rem 0;
   border-top: 1px solid var(--line);
+  cursor: pointer;
 }
 
 .roadmap-list li:last-child {
@@ -902,6 +948,34 @@ a {
   color: var(--ink-muted);
   font-size: 0.98rem;
   line-height: 1.6;
+}
+
+.roadmap-reveal {
+  max-width: 32rem;
+  margin: 0;
+  overflow: hidden;
+  color: var(--gold-bright);
+  font-size: 0.88rem;
+  font-style: italic;
+  line-height: 1.6;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.5s var(--ease-cinematic), opacity 0.4s var(--ease-cinematic),
+    margin-top 0.5s var(--ease-cinematic);
+}
+
+.roadmap-row.is-open .roadmap-reveal {
+  margin-top: 0.5rem;
+  max-height: 3rem;
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .roadmap-row:hover .roadmap-reveal {
+    margin-top: 0.5rem;
+    max-height: 3rem;
+    opacity: 1;
+  }
 }
 
 .roadmap-status {
@@ -994,6 +1068,62 @@ a {
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.final-pulse {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+}
+
+.final-pulse-track {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.final-pulse-dot {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  background: var(--gold-bright);
+  box-shadow: 0 0 6px var(--gold-soft);
+  animation: finalPulseTravel 3.4s ease-in-out infinite;
+}
+
+@keyframes finalPulseTravel {
+  0%,
+  100% {
+    left: 0;
+    opacity: 0.2;
+  }
+  50% {
+    left: calc(100% - 5px);
+    opacity: 1;
+  }
+}
+
+.final-pulse-label {
+  color: var(--ink-faint);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .final-pulse-dot {
+    animation: none;
+    left: calc(50% - 2.5px);
+  }
 }
 
 /* ---------- post-reveal mark ---------- */

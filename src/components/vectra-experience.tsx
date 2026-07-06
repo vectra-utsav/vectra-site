@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { OpeningSequence } from "@/components/opening-sequence";
 import { ScrollProgress } from "@/components/motion/scroll-progress";
+import { CustomCursor } from "@/components/motion/custom-cursor";
+import { useAmbience } from "@/lib/use-ambience";
 import { ChapterProblem } from "@/components/chapters/chapter-problem";
 import { ChapterIdea } from "@/components/chapters/chapter-idea";
 import { ChapterPhilosophy } from "@/components/chapters/chapter-philosophy";
@@ -41,14 +43,17 @@ function SiteMark() {
 
 export function VectraExperience() {
   const [opened, setOpened] = useState(false);
+  useAmbience();
 
   return (
     <div className="site-shell">
+      <div className="ambient-vignette" aria-hidden="true" />
       <OpeningSequence onDone={() => setOpened(true)} />
       {opened && (
         <>
           <ScrollProgress />
           <SiteMark />
+          <CustomCursor />
         </>
       )}
 

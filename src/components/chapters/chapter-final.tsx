@@ -25,6 +25,20 @@ export function ChapterFinal() {
         >
           {founderNote}
         </motion.p>
+
+        <motion.div
+          className="final-pulse"
+          aria-hidden="true"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ duration: 1.4, delay: 2.4 }}
+        >
+          <span className="final-pulse-track">
+            <span className="final-pulse-dot" />
+          </span>
+          <span className="final-pulse-label">Still running.</span>
+        </motion.div>
       </div>
     </section>
   );

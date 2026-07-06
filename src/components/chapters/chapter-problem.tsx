@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import { ChapterLabel } from "@/components/motion/chapter-label";
-import { ParticleField } from "@/components/motion/particle-field";
+import { CityCanvas } from "@/components/motion/city-canvas";
 import { problemBody, problemClose, problemLabel, problemLead } from "@/data/vectra";
 
 export function ChapterProblem() {
   return (
     <section className="chapter chapter-problem" id="problem">
-      <ParticleField />
+      <CityCanvas />
       <div className="chapter-shell is-narrow">
         <ChapterLabel>{problemLabel}</ChapterLabel>
 

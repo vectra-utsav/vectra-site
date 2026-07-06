@@ -224,15 +224,46 @@ export type RoadmapStage = {
   label: string;
   detail: string;
   state: "done" | "active" | "queued";
+  reveal: string;
 };
 
 export const roadmapStages: RoadmapStage[] = [
-  { label: "Building", detail: "Eight services, independently scoped, independently owned.", state: "done" },
-  { label: "Testing", detail: "Failure injected on purpose, before the world does it for free.", state: "active" },
-  { label: "Breaking", detail: "On our terms, in a room we control, long before launch day.", state: "active" },
-  { label: "Learning", detail: "Every incident becomes an invariant the system now enforces.", state: "queued" },
-  { label: "Improving", detail: "Nothing ships and stays still. It ships and keeps moving.", state: "queued" },
-  { label: "Launching", detail: "When the system earns it. Not a day before.", state: "queued" }
+  {
+    label: "Building",
+    detail: "Eight services, independently scoped, independently owned.",
+    state: "done",
+    reveal: "The same ten stages a request just moved through, above."
+  },
+  {
+    label: "Testing",
+    detail: "Failure injected on purpose, before the world does it for free.",
+    state: "active",
+    reveal: "The Dispatch outage you just watched — we run that on purpose, weekly."
+  },
+  {
+    label: "Breaking",
+    detail: "On our terms, in a room we control, long before launch day.",
+    state: "active",
+    reveal: "If it can't survive us breaking it, it isn't ready to survive traffic."
+  },
+  {
+    label: "Learning",
+    detail: "Every incident becomes an invariant the system now enforces.",
+    state: "queued",
+    reveal: "The reconciliation worker exists because something like it once didn't."
+  },
+  {
+    label: "Improving",
+    detail: "Nothing ships and stays still. It ships and keeps moving.",
+    state: "queued",
+    reveal: "There is no final version. There's just the current one."
+  },
+  {
+    label: "Launching",
+    detail: "When the system earns it. Not a day before.",
+    state: "queued",
+    reveal: "You'll know. The heartbeat on this page won't be the only one."
+  }
 ];
 
 /* ---------- Final ---------- */
